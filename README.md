@@ -1,1 +1,1 @@
-# go-spring-starter-go-redis
+# starter-go-redis
