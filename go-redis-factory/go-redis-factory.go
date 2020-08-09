@@ -14,15 +14,27 @@
  * limitations under the License.
  */
 
-package StarterGoRedis
+package GoRedisFactory
 
 import (
+	"fmt"
+
 	"github.com/go-redis/redis"
-	"github.com/go-spring/spring-boot"
-	"github.com/go-spring/starter-go-redis/go-redis-factory"
+	"github.com/go-spring/starter-redis"
 )
 
-func init() {
-	SpringBoot.RegisterNameBeanFn("go-redis-client", GoRedisFactory.NewClient).
-		ConditionOnMissingBean((*redis.Cmdable)(nil))
+// NewClient 创建 Redis 客户端
+func NewClient(config StarterRedis.Config) (redis.Cmdable, error) {
+
+	address := fmt.Sprintf("%s:%d", config.Host, config.Port)
+	client := redis.NewClient(&redis.Options{
+		Addr:     address,
+		Password: config.Password,
+		DB:       config.Database,
+	})
+
+	if err := client.Ping().Err(); err != nil {
+		return nil, err
+	}
+	return client, nil
 }

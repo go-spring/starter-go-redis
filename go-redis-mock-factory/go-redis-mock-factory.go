@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package StarterGoRedis
+package GoRedisMockFactory
 
 import (
+	"github.com/elliotchance/redismock"
 	"github.com/go-redis/redis"
-	"github.com/go-spring/spring-boot"
-	"github.com/go-spring/starter-go-redis/go-redis-factory"
 )
 
-func init() {
-	SpringBoot.RegisterNameBeanFn("go-redis-client", GoRedisFactory.NewClient).
-		ConditionOnMissingBean((*redis.Cmdable)(nil))
+// MockRedisClient 创建 Redis Mock 客户端
+func MockRedisClient(fn func(*redismock.ClientMock)) func() redis.Cmdable {
+	return func() redis.Cmdable {
+		mock := redismock.NewMock()
+		fn(mock)
+		return mock
+	}
 }
