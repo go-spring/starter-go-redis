@@ -18,13 +18,23 @@ package StarterGoRedis
 
 import (
 	"github.com/go-spring/spring-core/gs"
-	"github.com/go-spring/spring-core/gs/cond"
-	"github.com/go-spring/spring-core/redis"
-	"github.com/go-spring/spring-go-redis"
+	"github.com/redis/go-redis/v9"
 )
 
+type Config struct {
+	Addr     string `value:"${addr}"`
+	Password string `value:"${password:=}"`
+}
+
 func init() {
-	gs.Provide(SpringGoRedis.NewClient, "${redis}").
-		Name("RedisClient").
-		On(cond.OnMissingBean(gs.BeanID((*redis.Client)(nil), "RedisClient")))
+	gs.Group("spring.go-redis",
+		func(c Config) (*redis.Client, error) { // init
+			return redis.NewClient(&redis.Options{
+				Addr:     c.Addr,
+				Password: c.Password,
+			}), nil
+		},
+		func(client *redis.Client) error { // destroy
+			return client.Close()
+		})
 }
