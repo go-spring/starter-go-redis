@@ -50,8 +50,12 @@ func main() {
 	})
 
 	http.HandleFunc("/set", func(w http.ResponseWriter, r *http.Request) {
-		_ = s.Redis.Set(r.Context(), "key", "value", 0).Err()
-		_, _ = w.Write([]byte("ok"))
+		str, err := s.Redis.Set(r.Context(), "key", "value", 0).Result()
+		if err != nil {
+			_, _ = w.Write([]byte(err.Error()))
+			return
+		}
+		_, _ = w.Write([]byte(str))
 	})
 
 	gs.Run()
@@ -61,7 +65,7 @@ func main() {
 	// ~ curl http://127.0.0.1:9090/get
 	// redis: nil%
 	// ~ curl http://127.0.0.1:9090/set
-	// ok%
+	// OK%
 	// ~ curl http://127.0.0.1:9090/get
 	// value%
 }

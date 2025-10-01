@@ -49,7 +49,7 @@ type Service struct {
 
 ```go
 str, err := s.Redis.Get(r.Context(), "key").Result()
-_ = s.Redis.Set(r.Context(), "key", "value", 0).Err()
+str, err := s.Redis.Set(r.Context(), "key", "value", 0).Result()
 ```
 
 ## 高级功能
