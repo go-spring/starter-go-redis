@@ -26,20 +26,36 @@ import (
 	"github.com/go-spring/spring-core/gs"
 	"github.com/redis/go-redis/v9"
 
-	_ "github.com/go-spring/starter-go-redis"
+	StarterGoRedis "github.com/go-spring/starter-go-redis"
 )
 
 type Service struct {
 	Redis *redis.Client `autowire:""`
 }
 
+// AnotherRedisFactory is a custom implementation of the Factory interface.
+type AnotherRedisFactory struct{}
+
+func (AnotherRedisFactory) CreateClient(c StarterGoRedis.Config) (*redis.Client, error) {
+	return redis.NewClient(&redis.Options{
+		Addr:     c.Addr,
+		Password: c.Password,
+	}), nil
+}
+
 func main() {
+
+	// Register a custom Factory bean to replace the default one.
+	gs.Provide(func() StarterGoRedis.Factory {
+		return &AnotherRedisFactory{}
+	})
 
 	// Here `s` is not referenced by any other object,
 	// so we need to register it as a root object.
 	s := &Service{}
 	gs.Root(gs.Object(s))
 
+	// Define a handler to GET a Redis key value.
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
 		str, err := s.Redis.Get(r.Context(), "key").Result()
 		if err != nil {
@@ -49,6 +65,7 @@ func main() {
 		_, _ = w.Write([]byte(str))
 	})
 
+	// Define a handler to SET a Redis key value.
 	http.HandleFunc("/set", func(w http.ResponseWriter, r *http.Request) {
 		str, err := s.Redis.Set(r.Context(), "key", "value", 0).Result()
 		if err != nil {
