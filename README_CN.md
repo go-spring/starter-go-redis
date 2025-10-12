@@ -39,7 +39,7 @@ spring.go-redis.main.addr=127.0.0.1:6379
 import "github.com/redis/go-redis/v9"
 
 type Service struct {
-Redis *redis.Client `autowire:""`
+    Redis *redis.Client `autowire:""`
 }
 ```
 
