@@ -17,38 +17,42 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 
+	"github.com/go-spring/log"
 	"github.com/go-spring/spring-core/gs"
 	"github.com/redis/go-redis/v9"
 
 	StarterGoRedis "github.com/go-spring/starter-go-redis"
 )
 
-type Service struct {
-	Redis *redis.Client `autowire:""`
+func init() {
+	StarterGoRedis.RegisterDriver("AnotherRedisDriver", &AnotherRedisDriver{})
 }
 
-// AnotherRedisFactory is a custom implementation of the Factory interface.
-type AnotherRedisFactory struct{}
+// AnotherRedisDriver is a custom implementation of the Driver interface.
+type AnotherRedisDriver struct{}
 
-func (AnotherRedisFactory) CreateClient(c StarterGoRedis.Config) (*redis.Client, error) {
+func (AnotherRedisDriver) CreateClient(c StarterGoRedis.Config) (*redis.Client, error) {
+	log.Infof(context.Background(), log.TagAppDef, "AnotherRedisDriver::CreateClient")
 	return redis.NewClient(&redis.Options{
 		Addr:     c.Addr,
 		Password: c.Password,
 	}), nil
 }
 
-func main() {
+type Service struct {
+	Redis *redis.Client `autowire:""`
+}
 
-	// Register a custom Factory bean to replace the default one.
-	gs.Provide(func() StarterGoRedis.Factory {
-		return &AnotherRedisFactory{}
-	})
+func main() {
+	// You can change the `driver` property in the configuration file
+	// and check the used Redis driver via logs.
 
 	// Here `s` is not referenced by any other object,
 	// so we need to register it as a root object.

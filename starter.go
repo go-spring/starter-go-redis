@@ -17,61 +17,70 @@
 package StarterGoRedis
 
 import (
-	"github.com/go-spring/spring-core/conf"
+	"fmt"
+
 	"github.com/go-spring/spring-core/gs"
 	"github.com/redis/go-redis/v9"
 )
 
 // Config defines Redis connection configuration.
 type Config struct {
-	Addr     string `value:"${addr}"`
+
+	// Addr is the Redis server address.
+	Addr string `value:"${addr}"`
+
+	// Password is the Redis server password, default is empty.
 	Password string `value:"${password:=}"`
+
+	// Driver specifies which Redis driver to use, defaults to DefaultDriver.
+	Driver string `value:"${driver:=DefaultDriver}"`
 }
 
-// Factory defines an interface for creating Redis clients.
-type Factory interface {
+func init() {
+	// Register a group of beans under the key "${spring.go-redis}".
+	// This group manages the lifecycle of Redis clients.
+	gs.Group("${spring.go-redis}",
+		// create function creates a new Redis client
+		func(c Config) (*redis.Client, error) {
+			d, ok := driverRegistry[c.Driver]
+			if !ok {
+				return nil, fmt.Errorf("redis driver not found: %s", c.Driver)
+			}
+			return d.CreateClient(c)
+		},
+		// destroy function closes the Redis client
+		func(client *redis.Client) error {
+			return client.Close()
+		})
+}
+
+var driverRegistry = map[string]Driver{}
+
+func init() {
+	RegisterDriver("DefaultDriver", DefaultDriver{})
+}
+
+// Driver interface defines how to create a Redis client.
+type Driver interface {
 	CreateClient(c Config) (*redis.Client, error)
 }
 
-type DefaultFactory struct{}
+// RegisterDriver registers a Redis driver with the given name.
+// It panics if the driver name has already been registered.
+func RegisterDriver(name string, driver Driver) {
+	if _, ok := driverRegistry[name]; ok {
+		panic("redis driver already registered: " + name)
+	}
+	driverRegistry[name] = driver
+}
+
+// DefaultDriver is the default implementation of the Driver interface.
+type DefaultDriver struct{}
 
 // CreateClient creates a new Redis client based on the provided configuration.
-func (DefaultFactory) CreateClient(c Config) (*redis.Client, error) {
+func (DefaultDriver) CreateClient(c Config) (*redis.Client, error) {
 	return redis.NewClient(&redis.Options{
 		Addr:     c.Addr,
 		Password: c.Password,
 	}), nil
-}
-
-func init() {
-	const key = "spring.go-redis"
-
-	// Register a module that initializes Redis clients
-	gs.Module([]gs.ConditionOnProperty{
-		gs.OnProperty(key),
-	}, func(p conf.Properties) error {
-
-		// Bind configuration into a map of name -> Config
-		var m map[string]Config
-		if err := p.Bind(&m, "${"+key+"}"); err != nil {
-			return err
-		}
-
-		// Register DefaultFactory as a bean implementing Factory,
-		// but only if no other Factory bean has been provided.
-		gs.Object(&DefaultFactory{}).
-			Condition(gs.OnMissingBean[Factory]()).
-			Export(gs.As[Factory]())
-
-		// For each Redis configuration entry,
-		// create and register a Redis client bean.
-		for name, c := range m {
-			gs.Provide(func(factory Factory) (*redis.Client, error) { // create
-				return factory.CreateClient(c)
-			}).Destroy(func(client *redis.Client) error { // destroy
-				return client.Close()
-			}).Name(name)
-		}
-		return nil
-	})
 }
