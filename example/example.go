@@ -47,7 +47,7 @@ func (AnotherRedisDriver) CreateClient(c StarterGoRedis.Config) (*redis.Client, 
 }
 
 type Service struct {
-	Redis *redis.Client `autowire:""`
+	Redis *redis.Client `autowire:"__default__"`
 }
 
 func main() {
@@ -57,7 +57,6 @@ func main() {
 	// Here `s` is not referenced by any other object,
 	// so we need to register it as a root object.
 	s := &Service{}
-	gs.Root(gs.Object(s))
 
 	// Define a handler to GET a Redis key value.
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +78,9 @@ func main() {
 		_, _ = w.Write([]byte(str))
 	})
 
-	gs.Run()
+	gs.Configure(func(app gs.App) {
+		app.Root(app.Provide(s))
+	}).Run()
 
 	// Example usage:
 	//
