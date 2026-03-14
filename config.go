@@ -28,8 +28,7 @@ func init() {
 
 // Config defines Redis connection configuration.
 type Config struct {
-
-	// Addr is the Redis server address.
+	// Addr is the Redis server address, e.g., "127.0.0.1:6379".
 	Addr string `value:"${addr}"`
 
 	// Password is the Redis server password, default is empty.

@@ -24,14 +24,18 @@ import (
 )
 
 func init() {
-	// Register a default Redis client.
+
+	// Register a single default Redis client.
+	// This client will only be created if the property "spring.go-redis.addr" is set.
+	// It uses the configuration tagged with "${spring.go-redis}" and is named "__default__".
 	gs.Provide(newClient, gs.TagArg("${spring.go-redis}")).
 		Condition(gs.OnProperty("spring.go-redis.addr")).
 		Destroy(destroyClient).
 		Name("__default__")
 
-	// Register a group of beans under the key "${spring.go-redis.instances}".
-	// This group manages the lifecycle of Redis clients.
+	// Register multiple Redis clients as a group.
+	// Each instance is created according to the configuration in "${spring.go-redis.instances}".
+	// This allows defining multiple database connections dynamically.
 	gs.Group("${spring.go-redis.instances}", newClient, destroyClient)
 }
 
