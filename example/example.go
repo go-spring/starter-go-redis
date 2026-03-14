@@ -78,6 +78,13 @@ func main() {
 		_, _ = w.Write([]byte(str))
 	})
 
+	// Configure and run the Go-Spring application.
+	//
+	// Here we register `s` (the Service instance) as a root object.
+	// Root objects are top-level beans that are not dependencies of any other object.
+	// By providing it as a root, Go-Spring will manage its lifecycle and dependency injection.
+	//
+	// gs.Configure sets up the application configuration, and Run starts the application.
 	gs.Configure(func(app gs.App) {
 		app.Root(app.Provide(s))
 	}).Run()

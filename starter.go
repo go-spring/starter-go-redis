@@ -35,7 +35,7 @@ func init() {
 
 	// Register multiple Redis clients as a group.
 	// Each instance is created according to the configuration in "${spring.go-redis.instances}".
-	// This allows defining multiple database connections dynamically.
+	// This allows defining multiple redis instances dynamically.
 	gs.Group("${spring.go-redis.instances}", newClient, destroyClient)
 }
 
